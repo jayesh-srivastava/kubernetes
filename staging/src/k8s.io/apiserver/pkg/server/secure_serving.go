@@ -51,6 +51,7 @@ func (s *SecureServingInfo) tlsConfig(stopCh <-chan struct{}) (*tls.Config, erro
 		// enable HTTP2 for go's 1.7 HTTP Server
 		NextProtos: []string{"h2", "http/1.1"},
 	}
+	var insecureSkipVerify bool
 
 	// these are static aspects of the tls.Config
 	if s.DisableHTTP2 {
@@ -71,6 +72,10 @@ func (s *SecureServingInfo) tlsConfig(stopCh <-chan struct{}) (*tls.Config, erro
 			}
 		}
 	}
+
+	tlsConfig.CipherSuites = GetDefaultTLSCipherSuits()
+	tlsConfig.MaxVersion = GetTlsMaxVersion()
+	tlsConfig.InsecureSkipVerify = InsecureSkipVerify(insecureSkipVerify)
 
 	if s.ClientCA != nil {
 		// Populate PeerCertificates in requests, but don't reject connections without certificates
@@ -300,4 +305,13 @@ func (w *tlsHandshakeErrorWriter) Write(p []byte) (int, error) {
 
 	// for non tls handshake error, log it as usual
 	return w.out.Write(p)
+}
+
+func GetDefaultTLSCipherSuits() []uint16 {
+	return []uint16{
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+	}
 }
